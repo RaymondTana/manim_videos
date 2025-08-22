@@ -12,3 +12,6 @@ media/
 
 # Virtual environments
 .venv
+
+# generated media files
+**/media/
