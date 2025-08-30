@@ -1,6 +1,5 @@
 # Scenes
 
-- `MengerSpongeInteractive` is more complex
 - `MengerSponge` works for `n = 1` to `n = 3`
 - `Cantor` is the main one for the Cantor Set
 - `TuringMachineAnimation` shows example TM
