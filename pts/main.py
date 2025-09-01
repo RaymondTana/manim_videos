@@ -47,377 +47,50 @@ NORMAL_BUFFER = 0.5
 
 ####################
 
-###### SCENES #######
-
-class MengerSponge(ThreeDScene):
+# Some titles
+class all_text(Scene):
     def construct(self):
-        # Set up 3D scene with camera and lighting
-        self.set_camera_orientation(phi = 60 * DEGREES, theta = 45 * DEGREES)
-        self.camera.light_source.move_to(3 * IN + 2 * LEFT + 2 * UP)
-        
-        # Title
-        title = Text("Menger Sponge", font_size = 48)
-        title.to_edge(UP)
-        self.add_fixed_in_frame_mobjects(title)
-        
-        # Animate different iterations of the Menger Sponge
-        for n in range(4): # Show iterations 0 through 3
-            # Create iteration label
-            iteration_text = Text(f"Iteration n = {n}", font_size = 36)
-            iteration_text.next_to(title, DOWN)
-            self.add_fixed_in_frame_mobjects(iteration_text)
-            
-            # Generate Menger Sponge for current iteration
-            sponge = self.create_menger_sponge(n)
-            sponge.set_color(BLUE)
-            sponge.set_sheen(0.5, direction = IN)
-            
-            # Add the sponge to scene
-            self.add(sponge)
-            
-            # Rotate the sponge
-            self.play(
-                Rotate(sponge, angle = 2 * PI, axis = UP, run_time = 3),
-                rate_func = linear
-            )
-            
-            # Brief pause before next iteration
-            self.wait(0.5)
-            
-            # Remove current sponge and text for next iteration
-            self.remove(sponge, iteration_text)
-        
-        # Final display of highest iteration with slow rotation
-        final_sponge = self.create_menger_sponge(3)
-        final_sponge.set_color_by_gradient(BLUE, PURPLE, GREEN)
-        final_sponge.set_sheen(0.7, direction = IN)
-        
-        final_text = Text("Final Iteration n = 3", font_size = 36)
-        final_text.next_to(title, DOWN)
-        self.add_fixed_in_frame_mobjects(final_text)
-        
-        self.add(final_sponge)
-        self.play(
-            Rotate(final_sponge, angle = 4 * PI, axis = UP + 0.3 * RIGHT, run_time = 6),
-            rate_func = linear
-        )
-        
+        section_titles = ['Geometric Dimension', 'Compression', 'Dimension from Compression']
+        formulas = [
+            {
+                'title': 'Point-to-Set Principle',
+                'math': r'\operatorname{dim}_{\operatorname{fractal}}(S) = \max_{x \in S} \operatorname{dim}(x) = \max_{x \in S} \lim_{n \to \infty} \frac{C(x \upharpoonright n)}{n}',
+            },
+            {
+                'title': 'Effective dimension',
+                'math': r'\operatorname{dim}(x) = \lim_{n \to \infty} \frac{C(x \upharpoonright n)}{n}',
+            }
+        ]
+
+        write_speed = 0.75
         self.wait(2)
-    
-    def create_menger_sponge(self, n, size=2, center=ORIGIN):
-        """
-        Recursively create a Menger Sponge of iteration n.
-        
-        Args:
-            n: Iteration level (0 = solid cube)
-            size: Size of the current cube
-            center: Center position of the current cube
-        
-        Returns:
-            VGroup containing all the cubes that make up the sponge
-        """
-        if n == 0:
-            # Base case: return a single cube
-            cube = Cube(side_length=size, fill_opacity=0.8)
-            cube.move_to(center)
-            return VGroup(cube)
-        
-        # Recursive case: create 20 smaller cubes (27 - 7 removed)
-        sponge_group = VGroup()
-        new_size = size / 3
-        
-        # Generate all 27 possible positions in a 3x3x3 grid
-        for i in range(3):
-            for j in range(3):
-                for k in range(3):
-                    # Skip the 7 positions that should be removed:
-                    # - Center cube (1,1,1)
-                    # - Face centers: cubes where exactly 2 coordinates are 1
-                    skip_positions = [
-                        (1, 1, 1),  # Center
-                        (1, 1, 0), (1, 1, 2),  # Front/back face centers
-                        (1, 0, 1), (1, 2, 1),  # Top/bottom face centers  
-                        (0, 1, 1), (2, 1, 1),  # Left/right face centers
-                    ]
-                    
-                    if (i, j, k) in skip_positions:
-                        continue
-                    
-                    # Calculate position of this sub-cube
-                    offset = np.array([
-                        (i - 1) * new_size,
-                        (j - 1) * new_size, 
-                        (k - 1) * new_size
-                    ])
-                    new_center = center + offset
-                    
-                    # Recursively create sub-sponge
-                    sub_sponge = self.create_menger_sponge(n - 1, new_size, new_center)
-                    sponge_group.add(sub_sponge)
-        
-        return sponge_group
+        for s in section_titles:
+            T = Tex(s, font_size = 64)
+            self.play(Write(T), run_time = write_speed)
+            self.wait(2)
+            self.play(Unwrite(T), run_time = write_speed)
+            self.wait(2)
 
-class MengerSpongeInteractive(ThreeDScene):
-    """
-    Alternative version with interactive controls and better visualization
-    """
-    def construct(self):
-        # Set up scene
-        self.set_camera_orientation(phi = 75 * DEGREES, theta = 30 * DEGREES)
-        self.camera.light_source.move_to(4 * OUT + 3 * LEFT + 2 * UP)
-        
-        # Create title and controls
-        title = Text("Interactive Menger Sponge", font_size = 40)
-        title.to_edge(UP)
-        self.add_fixed_in_frame_mobjects(title)
-        
-        # Show each iteration with detailed animation
-        iterations_to_show = [0, 1, 2, 3]
-        
-        for i, n in enumerate(iterations_to_show):
-            # Create info text
-            info_lines = [
-                f"Iteration: {n}",
-                f"Cubes: {20 ** n if n > 0 else 1}",
-                f"Volume ratio: {(20 / 27) ** n:.3f}" if n > 0 else "Volume ratio: 1.000"
-            ]
-            
-            info_text = VGroup(*[Text(line, font_size = 24) for line in info_lines])
-            info_text.arrange(DOWN, aligned_edge = LEFT)
-            info_text.to_corner(UL, buff = 1)
-            info_text.shift(DOWN * 1.5)
-            self.add_fixed_in_frame_mobjects(info_text)
-            
-            # Create the sponge
-            sponge = self.create_menger_sponge_colored(n)
-            
-            # Animate appearance
-            if n == 0:
-                self.play(Create(sponge), run_time = 1)
-            else:
-                self.play(FadeIn(sponge, scale = 0.8), run_time = 1.5)
-            
-            # Rotate to show different angles
-            self.play(
-                Rotate(sponge, angle = PI, axis = UP + 0.2 * RIGHT, run_time = 2),
-                rate_func=smooth
-            )
-            
-            self.play(
-                Rotate(sponge, angle = PI, axis = RIGHT + 0.2 * UP, run_time = 2),
-                rate_func=smooth
-            )
-            
-            # Clean up for next iteration
-            if i < len(iterations_to_show) - 1:
-                self.play(FadeOut(sponge), FadeOut(info_text), run_time = 1)
-            else:
-                # Final continuous rotation
-                self.play(
-                    Rotate(sponge, angle = 2 * PI, axis = UP, run_time = 4),
-                    rate_func = linear
-                )
-        
         self.wait(2)
-    
-    def create_menger_sponge_colored(self, n, size = 2.5, center = ORIGIN, depth = 0):
-        """
-        Create Menger Sponge with color gradient based on recursion depth
-        """
-        if n == 0:
-            cube = Cube(side_length=size, fill_opacity = 0.85)
-            cube.move_to(center)
-            
-            # Color based on depth for visual interest
-            colors = [BLUE, GREEN, YELLOW, RED, PURPLE, ORANGE]
-            cube.set_color(colors[depth % len(colors)])
-            cube.set_sheen(0.6, direction = IN)
-            
-            return cube
-        
-        sponge_group = VGroup()
-        new_size = size / 3
-        
-        # Create the 20 remaining cubes
-        for i in range(3):
-            for j in range(3):
-                for k in range(3):
-                    # Skip removed positions
-                    skip_positions = [
-                        (1, 1, 1),  # Center
-                        (1, 1, 0), (1, 1, 2),  # Face centers
-                        (1, 0, 1), (1, 2, 1),
-                        (0, 1, 1), (2, 1, 1),
-                    ]
-                    
-                    if (i, j, k) in skip_positions:
-                        continue
-                    
-                    offset = np.array([
-                        (i - 1) * new_size,
-                        (j - 1) * new_size,
-                        (k - 1) * new_size
-                    ])
-                    new_center = center + offset
-                    
-                    sub_sponge = self.create_menger_sponge_colored(
-                        n - 1, new_size, new_center, depth + 1
-                    )
-                    sponge_group.add(sub_sponge)
-        
-        return sponge_group
+        for s in formulas:
+            T = Tex(s['title'], font_size = 64).move_to(UP * 2)
+            M = MathTex(s['math'], font_size = 45)
+            self.play(Write(T), Write(M), run_time = write_speed)
+            self.wait(5)
+            self.play(Unwrite(T), Unwrite(M), run_time = write_speed)
+            self.wait(2)
 
-class MengerSpongeInteractiveQuicker(ThreeDScene):
-    """
-    Fast version optimized for quick previews
-    """
-    def construct(self):
-        # Set up scene
-        self.set_camera_orientation(phi=75 * DEGREES, theta=30 * DEGREES)
-        self.camera.light_source.move_to(4*OUT + 3*LEFT + 2*UP)
-        
-        # Create title and controls
-        title = Text("Fast Menger Sponge Preview", font_size=40)
-        title.to_edge(UP)
-        self.add_fixed_in_frame_mobjects(title)
-        
-        # Show only lower iterations for speed
-        iterations_to_show = [0, 1, 2]  # Skip level 3 for speed
-        
-        for i, n in enumerate(iterations_to_show):
-            # Create info text
-            info_lines = [
-                f"Iteration: {n}",
-                f"Cubes: {20**n if n > 0 else 1}",
-                f"Volume ratio: {(20/27)**n:.3f}" if n > 0 else "Volume ratio: 1.000"
-            ]
-            
-            info_text = VGroup(*[Text(line, font_size = 24) for line in info_lines])
-            info_text.arrange(DOWN, aligned_edge = LEFT)
-            info_text.to_corner(UL, buff=1)
-            info_text.shift(DOWN * 1.5)
-            self.add_fixed_in_frame_mobjects(info_text)
-            
-            # Create the sponge
-            sponge = self.create_menger_sponge_colored(n)
-            
-            # Faster animations
-            if n == 0:
-                self.play(Create(sponge), run_time = 0.8)
-            else:
-                self.play(FadeIn(sponge, scale = 0.8), run_time=1)
-            
-            # Single rotation
-            self.play(
-                Rotate(sponge, angle = PI, axis = UP + 0.2 * RIGHT, run_time = 1.5),
-                rate_func = smooth
-            )
-            
-            # Clean up for next iteration
-            if i < len(iterations_to_show) - 1:
-                self.play(FadeOut(sponge), FadeOut(info_text), run_time = 0.5)
-            else:
-                # Final rotation
-                self.play(
-                    Rotate(sponge, angle = PI, axis = UP, run_time = 2),
-                    rate_func = linear
-                )
-        
-        self.wait(1)
-    
-    def create_menger_sponge_colored(self, n, size=2.5, center=ORIGIN, depth=0):
-        """
-        Create Menger Sponge with color gradient based on recursion depth
-        """
-        if n == 0:
-            cube = Cube(side_length=size, fill_opacity = 0.85)
-            cube.move_to(center)
-            
-            # Color based on depth for visual interest
-            colors = [BLUE, GREEN, YELLOW, RED, PURPLE, ORANGE]
-            cube.set_color(colors[depth % len(colors)])
-            cube.set_sheen(0.6, direction = IN)
-            
-            return cube
-        
-        sponge_group = VGroup()
-        new_size = size / 3
-        
-        # Create the 20 remaining cubes
-        for i in range(3):
-            for j in range(3):
-                for k in range(3):
-                    # Skip removed positions
-                    skip_positions = [
-                        (1, 1, 1),  # Center
-                        (1, 1, 0), (1, 1, 2),  # Face centers
-                        (1, 0, 1), (1, 2, 1),
-                        (0, 1, 1), (2, 1, 1),
-                    ]
-                    
-                    if (i, j, k) in skip_positions:
-                        continue
-                    
-                    offset = np.array([
-                        (i - 1) * new_size,
-                        (j - 1) * new_size,
-                        (k - 1) * new_size
-                    ])
-                    new_center = center + offset
-                    
-                    sub_sponge = self.create_menger_sponge_colored(
-                        n - 1, new_size, new_center, depth + 1
-                    )
-                    sponge_group.add(sub_sponge)
-        
-        return sponge_group
+        write_speed = 0.75
+        self.wait(2)
+        T = Tex("Example: the Cantor Set", font_size = 64)
+        self.play(Write(T), run_time = write_speed)
+        self.wait(2)
+        self.play(Unwrite(T), run_time = write_speed)
+        self.wait(2)
 
-class QuickPreview(ThreeDScene):
-    """
-    Ultra-fast preview showing just one iteration with minimal animation
-    """
-    def construct(self):
-        self.set_camera_orientation(phi=60 * DEGREES, theta=45 * DEGREES)
-        
-        title = Text("Quick Menger Sponge Preview", font_size=36)
-        title.to_edge(UP)
-        self.add_fixed_in_frame_mobjects(title)
-        
-        # Show just iteration 2 (good balance of detail vs speed)
-        sponge = self.create_menger_sponge(2)
-        sponge.set_color_by_gradient(BLUE, GREEN)
-        sponge.set_sheen(0.5)
-        
-        self.add(sponge)
-        self.play(Rotate(sponge, PI, axis = UP, run_time = 2))
-        self.wait(0.5)
-    
-    def create_menger_sponge(self, n, size = 2, center = ORIGIN):
-        """Optimized version with reduced recursion"""
-        if n == 0:
-            cube = Cube(side_length=size, fill_opacity = 0.8)
-            cube.move_to(center)
-            return cube
-        
-        sponge_group = VGroup()
-        new_size = size / 3
-        
-        # Only create the 20 valid positions
-        valid_positions = []
-        for i in range(3):
-            for j in range(3):
-                for k in range(3):
-                    if (i, j, k) not in [(1,1,1), (1,1,0), (1,1,2), (1,0,1), (1,2,1), (0,1,1), (2,1,1)]:
-                        valid_positions.append((i, j, k))
-        
-        for i, j, k in valid_positions:
-            offset = np.array([(i - 1) * new_size, (j - 1) * new_size, (k - 1) * new_size])
-            new_center = center + offset
-            sub_sponge = self.create_menger_sponge(n - 1, new_size, new_center)
-            sponge_group.add(sub_sponge)
-        
-        return sponge_group
+###### INTRODUCITON + GEOMETRIC DIMENSION #######
 
+# What's the fractal dimension of the Cantor set? 
 class Cantor(ThreeDScene):
     MAX_DEPTH = 5 # number of iterations
     UNIT = 12 # pixels that represent length 1
@@ -520,8 +193,10 @@ class Cantor(ThreeDScene):
         self.move_camera(frame_center = [0, 0, 0], zoom = 1)
 
         title = MathTex(r"\text{Middle-$\frac{1}{3}$ Cantor set}", font_size = 64).to_edge(UP)
-        question = MathTex(r"1D?... 0D?").move_to(2 * DOWN)
-        note = MathTex(r"\operatorname{dim}_{\operatorname{fractal}} = \frac{\log 2}{\log 3} \approx 0.6309", font_size = 30).next_to(question, DOWN)
+        question = Tex(r"$1$D? ... $0$D?", font_size = 50)
+        note = MathTex(r"\operatorname{dim}_{\operatorname{fractal}}(\text{Cantor}) = \frac{\log 2}{\log 3} \approx 0.6309", font_size = 50)
+        G = VGroup(question, note).arrange(RIGHT, buff = 1.2).move_to(2 * DOWN)
+
         self.add_fixed_in_frame_mobjects(title)
         self.play(Write(title))
         self.wait(5)
@@ -531,29 +206,413 @@ class Cantor(ThreeDScene):
         self.add_fixed_in_frame_mobjects(note)
         self.play(Write(note))
         self.wait(3)
-        self.play(FadeOut(VGroup(*blocks), title, question, note), run_time = 0.5)
+        self.play(FadeOut(VGroup(*blocks), title, question, note), run_time = 1)
 
-class MacOSTextEditorWithCode(Scene):
+# Initial flatworld scene
+class FlatWorld(ThreeDScene):
     def construct(self):
-        code = '''from manim import Scene, Square
-
-class FadeInSquare(Scene):
-    def construct(self):
-        s = Square()
-        self.play(FadeIn(s))
-        self.play(s.animate.scale(2))
-        self.wait()'''
-
-        rendered_code = Code(
-            code_string=code,
-            language="python",
-            background="window",
-            background_config={"stroke_color": "maroon"},
-            add_line_numbers = False,
-
+        plane = NumberPlane(
+            x_range = [-7, 7, 1],
+            y_range = [-4, 4, 1],
+            background_line_style = {"stroke_opacity" : 0.20, "stroke_width" : 1.2},
         )
-        self.play(Create(rendered_code))
+        plane.set_z_index(-5)
+        self.add(plane)
 
+        self.set_camera_orientation(phi = 0 * DEGREES, theta = -90 * DEGREES, zoom = 1.0)
+
+        # Create the main square
+        sq = Square(side_length = 1.6, color = BLUE, fill_opacity = 0.85)
+        
+        # Create facial features as cut-outs (negative space)
+        # Two circular eyes
+        left_eye = Circle(radius = 0.12, color = BLACK, fill_opacity = 1.0)
+        left_eye.move_to(sq.get_center() + LEFT * 0.25 + UP * 0.15)
+        
+        right_eye = Circle(radius = 0.12, color = BLACK, fill_opacity = 1.0)
+        right_eye.move_to(sq.get_center() + RIGHT * 0.25 + UP * 0.15)
+        
+        # D-shaped smile using an arc
+        smile = Arc(
+            radius = 0.3,
+            angle = PI,
+            start_angle = PI,
+            color = BLACK,
+            stroke_width = 8
+        )
+        smile.move_to(sq.get_center() + DOWN * 0.3)
+        
+        # Group the square with its facial features
+        face = VGroup(sq, left_eye, right_eye, smile)
+        
+        self.play(FadeIn(face, scale = 0.7))
+        
+        # Define a wiggly parameterized loop path
+        def wiggly_path(t):
+            # t goes from 0 to 1 for a complete loop
+            # Create a figure-8 like curve with some wiggliness
+            x = 2.5 * np.sin(2 * PI * t) * np.cos(PI * t) + 0.3 * np.sin(8 * PI * t)
+            y = 1.5 * np.sin(4 * PI * t) + 0.2 * np.cos(12 * PI * t) * t
+            return np.array([x, y, 0])
+        
+        def rotation_func(t):
+            # Rotate smoothly along the path with some extra wiggles
+            return 1 * PI * t + 0.5 * np.sin(6 * PI * t)
+        
+        # Store initial position and rotation
+        initial_pos = face.get_center()
+        initial_angle = 0
+        
+        # Animate along the wiggly path
+        def update_face(mob, alpha):
+            # Get position along the curve
+            new_pos = wiggly_path(alpha)
+            # Get rotation at this point
+            new_angle = rotation_func(alpha)
+            
+            # Reset to initial state, then apply transformations
+            mob.move_to(initial_pos)
+            mob.rotate(-face.angle)  # Reset rotation
+            mob.rotate(new_angle)    # Apply new rotation
+            mob.shift(new_pos)       # Apply position offset
+            
+            # Store current angle for next reset
+            face.angle = new_angle
+            
+        # Initialize angle tracking
+        face.angle = 0
+        
+        self.play(
+            UpdateFromAlphaFunc(face, update_face),
+            run_time = 4.0,
+            rate_func = rate_functions.ease_in_out_quad
+        )
+
+        # show flatness
+        self.move_camera(
+            phi = 60 * DEGREES, theta = 90 * DEGREES, zoom = 0.95,
+            run_time = 1.8, rate_func = rate_functions.ease_in_out_quad
+        )
+        self.move_camera(
+            phi = 60 * DEGREES, theta = -90 * DEGREES, zoom = 0.95,
+            run_time = 6, rate_func = rate_functions.ease_in_out_quad
+        )
+
+        self.wait(2)
+
+# Part of the intro for geometric dimension
+class DimensionLadderExtrude(ThreeDScene):
+    def create_menger_sponge(self, n, size = 2, center = ORIGIN):
+        if n == 0:
+            # Base case: return a single cube
+            cube = Cube(side_length = size, fill_opacity = 0.8)
+            cube.move_to(center)
+            return VGroup(cube)
+        
+        # Recursive case: create 20 smaller cubes
+        sponge_group = VGroup()
+        new_size = size / 3
+        
+        # Generate all 27 possible positions in a 3 x 3 x 3 grid
+        for i in range(3):
+            for j in range(3):
+                for k in range(3):
+                    # Skip the 7 positions that should be removed:
+                    skip_positions = [
+                        (1, 1, 1), # Center
+                        (1, 1, 0), (1, 1, 2), # Front/back face centers
+                        (1, 0, 1), (1, 2, 1), # Top/bottom face centers  
+                        (0, 1, 1), (2, 1, 1), # Left/right face centers
+                    ]
+                    if (i, j, k) in skip_positions:
+                        continue
+                    
+                    # Calculate position of this sub-cube
+                    offset = np.array([
+                        (i - 1) * new_size,
+                        (j - 1) * new_size, 
+                        (k - 1) * new_size
+                    ])
+                    new_center = center + offset
+                    
+                    # Recursively create sub-sponge
+                    sub_sponge = self.create_menger_sponge(n - 1, new_size, new_center)
+                    sponge_group.add(sub_sponge)
+        
+        return sponge_group
+    
+    def construct(self):
+        S = 3.0 
+        PHI0 = 60 * DEGREES 
+        THETA0 = -90 * DEGREES 
+        ROT_RATE = 0.12 
+        COLOR = BLUE
+
+        self.set_camera_orientation(phi = PHI0, theta = THETA0, zoom = 1.0)
+        self.begin_ambient_camera_rotation(rate = ROT_RATE)
+
+        LABEL_POS = 3.2 * UP 
+
+        def make_label(t): # create a HUD label
+            return MathTex(t, font_size = 64).move_to(LABEL_POS)
+
+        label = make_label(r"0\text{D}") 
+        self.add_fixed_in_frame_mobjects(label)
+
+        def update_label(t): 
+            new = make_label(t)
+            self.play(Transform(label, new), run_time = 0.3)
+
+        # 0D
+        ring = Circle(radius = 0.3, color = COLOR, stroke_width = 14).set_fill(opacity = 0.0)
+        self.play(FadeIn(ring))
+        
+        dot = Dot(radius = 0.08, color = COLOR)
+        self.play(ReplacementTransform(ring, dot), run_time = 0.6)
+        self.wait(2)
+
+        # 1D
+        L = ValueTracker(0.0) # length
+
+        line = always_redraw(
+            lambda: Line(
+                start = LEFT * (L.get_value() / 2),
+                end = RIGHT * (L.get_value() / 2),
+                color = COLOR,
+                stroke_width = 10,
+            )
+        )
+
+        self.add(line)
+        self.play(
+            L.animate.set_value(S),
+            FadeOut(dot, scale = 0.5),
+            run_time = 1.8,
+            rate_func = rate_functions.ease_in_out_sine,
+        )
+        update_label(r"1\text{D}")
+        self.wait(0.3)
+
+        # 2D
+        H = ValueTracker(0.0)
+
+        square_fill = always_redraw(
+            lambda: Rectangle(
+                width = S,
+                height = max(H.get_value(), 1e-3),
+                stroke_width = 0,
+                fill_opacity = 0.95,
+                color = COLOR,
+                fill_color = COLOR,
+            )
+        )
+
+        self.add(square_fill)
+        self.play(
+            H.animate.set_value(S),
+            line.animate.set_opacity(0.0),
+            run_time = 1.8,
+            rate_func = smooth,
+        )
+        self.remove(line)
+        update_label(r"2\text{D}")
+        self.wait(0.4)
+
+        # 3D
+        D = ValueTracker(1e-3)
+
+        prism = always_redraw(
+            lambda: Prism(
+                dimensions = (S, S, max(D.get_value(), 1e-3))
+            ).set_fill(COLOR, opacity = 0.95).set_stroke(width = 0)
+        )
+
+        self.add(prism)
+        self.remove(square_fill)
+        self.play(
+            D.animate.set_value(S),
+            run_time = 2.0,
+            rate_func = rate_functions.ease_in_out_sine,
+        )
+        update_label(r"3\text{D}")
+
+        self.wait(2)
+
+        footer = MathTex(r"\text{geometric dimension}", font_size = 64).to_edge(DOWN)
+        self.add_fixed_in_frame_mobjects(footer)
+        self.play(Write(footer), run_time = 1)
+        self.wait(3)
+        self.play(FadeOut(label, footer, prism), run_time = 0.5)
+
+        # Menger Sponge
+        menger = MathTex(r"\text{Menger sponge}", font_size = 64).to_edge(UP)
+        note = MathTex(r"\operatorname{dim}_{\operatorname{fractal}}(\text{Menger}) = \frac{\log 20}{\log 3} \approx 2.7268", font_size = 45).to_edge(DOWN)
+        self.add_fixed_in_frame_mobjects(menger)
+        sponge = self.create_menger_sponge(n = 3, size = S)
+        sponge.set_color(BLUE)
+        self.play(FadeIn(sponge), Write(menger))
+        self.wait(5)
+        self.add_fixed_in_frame_mobjects(note)
+        self.play(Write(note))
+        self.wait(3)
+        self.play(FadeOut(sponge, menger, note), run_time = 0.5)
+
+        self.stop_ambient_camera_rotation()
+
+        cube_obj = Cube(side_length = S).set_fill(COLOR, opacity = 0.95).set_stroke(width = 0)
+        self.play(FadeIn(cube_obj), run_time = 0.6)
+
+        # Picking a point on the top face (z = S / 2) and slightly offset in x-y
+        p = 0.6 * (S / 2) * LEFT + 0.25 * (S / 2) * UP + (S / 2 + 0.01) * OUT
+        marker = Sphere(radius = 0.02).set_fill(RED, opacity = 1.0).set_stroke(width = 0).move_to(p)
+        self.play(FadeIn(marker), run_time = 0.6)
+        self.wait(0.5)
+
+        # Pan the cube so the chosen point moves to the screen center and zoom in
+        self.play(
+            cube_obj.animate.shift(-p),
+            marker.animate.shift(-p),
+            run_time = 0.5,
+            rate_func = rate_functions.ease_in_out_sine,
+        )
+        self.move_camera(zoom = 11, run_time = 1.2, rate_func = rate_functions.ease_in_out_quad)
+        self.wait(4)
+
+        # Go back
+        self.move_camera(zoom = 1.0, run_time = 1.2, rate_func = rate_functions.ease_in_out_quad)
+        self.play(
+            cube_obj.animate.shift(p),
+            marker.animate.shift(p),
+            run_time = 0.5,
+            rate_func = rate_functions.ease_in_out_sine,
+        )
+        self.play(FadeOut(marker), run_time = 0.5)
+        self.wait(0.5)
+
+        question = MathTex(r"\text{Is dimension only a \textit{macroscopic} property?}", font_size = 50).to_edge(UP)
+        self.add_fixed_in_frame_mobjects(question)
+        self.play(Write(question), run_time = 1)
+        self.wait(3)
+        self.play(FadeOut(question), run_time = 0.5)
+
+# Need a scene to explain fractal dimension. Table + definition of fractal dimension as the "appropriate exponent" for a shape
+class DimensionTable3D(ThreeDScene):
+    def construct(self):
+
+        BLUE_FILL = BLUE_D 
+        BLUE_EDGE = BLUE_B 
+
+        def stylize(m):
+            m.set_fill(BLUE_FILL, opacity = 1)
+            m.set_stroke(BLUE_EDGE, width = 2, opacity = 1)
+            return m
+
+        DOT = Tex("\vdots").set_opacity(0).set_stroke(width = 0)
+
+        cells = [
+            [Tex(r"Dimension"), Tex(r"0D"), Tex(r"1D"), Tex(r"2D"), Tex(r"3D")],
+            [Tex(r"Shape"), DOT.copy(), DOT.copy(), DOT.copy(), DOT.copy()],
+            [Tex(r"Size"), DOT.copy(), MathTex(r"\text{Length} = \ell^{{1}}"), MathTex(r"\text{Area} = \ell^{{2}}"), MathTex(r"\text{Volume} = \ell^{{3}}")],
+            [Tex(r"Shape"), DOT.copy(), DOT.copy(), DOT.copy(), DOT.copy()],
+            [Tex(r"Size"), DOT.copy(), MathTex(r"\text{Length} = 2r^{{1}}"), MathTex(r"\text{Area} = \pi r^{{2}}"), MathTex(r"\text{Volume} = \tfrac{4}{3}\,\pi r^{{3}}")]
+        ]
+
+        tbl = MobjectTable(
+            cells,
+            include_outer_lines = True,
+            line_config = {"stroke_color": WHITE, "stroke_width": 2},
+            v_buff = 0.35, h_buff = 0.6,
+        ).scale(0.9)
+
+        self.add_fixed_in_frame_mobjects(tbl)
+        self.play(FadeIn(tbl))
+        self.wait(0.2)
+
+        # --- Helpers ---
+        def place_in_cell(mobj: Mobject, row: int, col: int, scale=1.0, pad=0.75):
+            target = tbl.get_cell((row, col))
+            max_w = target.width * pad
+            max_h = target.height * pad
+            if mobj.width > max_w:
+                mobj.scale(max_w / mobj.width)
+            if mobj.height > max_h:
+                mobj.scale(max_h / mobj.height)
+            if scale != 1.0:
+                mobj.scale(scale)
+            mobj.move_to(target.get_center())
+            return mobj
+
+        def shade2d(m: Mobject):
+            if hasattr(m, "set_shade_in_3d"):
+                m.set_shade_in_3d(True)
+            return m
+        point_l = stylize(shade2d(Sphere(radius = 0.08, resolution = (16, 16))))
+        line_l = Line3D(0.8 * LEFT, 0.8 * RIGHT, thickness = 0.06, color = BLUE_FILL)
+        line_l.set_stroke(BLUE_EDGE, width = 1, opacity = 1)
+        square = stylize(shade2d(Square(side_length = 1.35)))
+        cube = stylize(Cube(side_length = 1.15))
+
+        place_in_cell(point_l, 2, 2)
+        place_in_cell(line_l, 2, 3)
+        place_in_cell(square, 2, 4)
+        place_in_cell(cube, 2, 5)
+
+        self.play(GrowFromCenter(point_l))
+        self.play(FadeIn(line_l))
+        self.play(FadeIn(square))
+        self.play(FadeIn(cube))
+        self.wait(0.4)
+
+        point_r = stylize(shade2d(Sphere(radius=0.08, resolution=(16, 16))))
+        line_r = Line3D(0.8 * LEFT, 0.8 * RIGHT, thickness=0.06, color=BLUE_FILL)
+        line_r.set_stroke(BLUE_EDGE, width=1, opacity=1)
+
+        disk = stylize(Cylinder(radius=0.72, height=0.06, direction=OUT, resolution=28))
+        ball = stylize(Sphere(radius=0.68, resolution=(32, 32)))
+
+        place_in_cell(point_r, 4, 2)
+        place_in_cell(line_r, 4, 3)
+        place_in_cell(disk, 4, 4)
+        place_in_cell(ball, 4, 5)
+
+        self.play(GrowFromCenter(point_r))
+        self.play(FadeIn(line_r))
+        self.play(FadeIn(disk))
+        self.play(FadeIn(ball))
+
+        self.wait(4)
+
+        table_group = VGroup(*[mob for mob in self.mobjects if isinstance(mob, VMobject)])
+
+        self.play(table_group.animate.scale(0.8).shift(UP))
+
+        self.wait(0.5)
+
+        m = VGroup(
+            Tex(r"Every shape has a corresponding \textit{exponent}.", font_size = 40),
+            Tex(r"The exponent captures how its total size grows under scaling.", font_size = 40)
+        ).arrange(DOWN, buff = 0.5).move_to(DOWN * 2)
+
+        m.set_z_index(20)
+
+        background = SurroundingRectangle(
+            m,
+            color = GOLD,
+            fill_color = DARK_BLUE,
+            fill_opacity = 0.3,
+            buff = 0.4,
+            stroke_width = 4,
+            corner_radius = 0.1
+        )
+
+        self.play(AnimationGroup(Create(background), Write(m), lag_ratio = 0.3))
+
+        self.wait(6)
+        self.play(*[FadeOut(mob) for mob in self.mobjects])
+
+###### COMPRESSION #######
+
+# Compressing a simple file
 class SideBySideCode(Scene):
     def construct(self):
 
@@ -623,6 +682,7 @@ class SideBySideCode(Scene):
         # Remove everything... too many objects
         self.play(*[FadeOut(mob) for mob in self.mobjects])
 
+# Compressing a random file
 class SideBySideCode_Random(Scene):
     def construct(self):
 
@@ -693,6 +753,7 @@ class SideBySideCode_Random(Scene):
         # Remove everything... too many objects
         self.play(*[FadeOut(mob) for mob in self.mobjects])
 
+# Taking C of a text file
 class ComplexityOfTextFiles(Scene):
     def construct(self):
 
@@ -846,6 +907,7 @@ class ComplexityOfTextFiles(Scene):
         self.play(Unwrite(T), Unwrite(M), Unwrite(integer), Unwrite(description), run_time = 0.75)
         self.wait(2)
 
+# For making the chart for normalized kolmogorov complexity
 class Slider_C_Chart(Scene):
     def construct(self):
         n_min, n_max = 0, 25 
@@ -1051,275 +1113,86 @@ class Slider_C_Chart(Scene):
 
         self.play(*[FadeOut(mob) for mob in self.mobjects])
 
-class FlatWorld(ThreeDScene):
+# Need another scene that assures the audience that no matter the formalism for Turing machines, get same notion.
+class Explain_Algorithms(Scene):
     def construct(self):
-        plane = NumberPlane(
-            x_range = [-7, 7, 1],
-            y_range = [-4, 4, 1],
-            background_line_style = {"stroke_opacity" : 0.20, "stroke_width" : 1.2},
+        code2 = Code(
+            code_string = '''
+print(s)
+''',
+            background = "window",
+            paragraph_config = {"font_size": 30},
+            add_line_numbers = False
         )
-        plane.set_z_index(-5)
-        self.add(plane)
 
-        self.set_camera_orientation(phi = 0 * DEGREES, theta = 0 * DEGREES, zoom = 1.0)
-
-        sq = Square(side_length = 1.6, color = BLUE, fill_opacity = 0.85)
-        self.play(FadeIn(sq, scale = 0.7))
-        self.play(
-            sq.animate.move_to(2.5 * RIGHT + 1.2 * UP),
-            Rotate(sq, angle = TAU * 2, about_point = ORIGIN),
-            run_time = 2.2,
-            rate_func = rate_functions.ease_in_out_sine,
-        )
-        self.play(
-            sq.animate.move_to(ORIGIN),
-            Rotate(sq, angle = TAU * 1.5, about_point = sq.get_center()),
-            run_time = 2.0,
-            rate_func = rate_functions.ease_in_out_sine,
-        )
-        self.wait(0.3)
-
-        # show flatness
-        self.move_camera(
-            phi = 60 * DEGREES, theta = 90 * DEGREES, zoom = 0.95,
-            run_time = 1.8, rate_func = rate_functions.ease_in_out_quad
-        )
-        self.move_camera(
-            phi = 60 * DEGREES, theta = 70 * DEGREES, zoom = 0.95,
-            run_time = 1.6, rate_func = rate_functions.ease_in_out_quad
-        )
-        self.wait(0.4)
-
-class DimensionLadderExtrude(ThreeDScene):
-    def create_menger_sponge(self, n, size = 2, center = ORIGIN):
-        if n == 0:
-            # Base case: return a single cube
-            cube = Cube(side_length = size, fill_opacity = 0.8)
-            cube.move_to(center)
-            return VGroup(cube)
+        prompt = Tex(r"Given a target string \texttt{s}:", font_size = 60, color = WHITE).move_to(2 * UP)
         
-        # Recursive case: create 20 smaller cubes
-        sponge_group = VGroup()
-        new_size = size / 3
-        
-        # Generate all 27 possible positions in a 3 x 3 x 3 grid
-        for i in range(3):
-            for j in range(3):
-                for k in range(3):
-                    # Skip the 7 positions that should be removed:
-                    skip_positions = [
-                        (1, 1, 1), # Center
-                        (1, 1, 0), (1, 1, 2), # Front/back face centers
-                        (1, 0, 1), (1, 2, 1), # Top/bottom face centers  
-                        (0, 1, 1), (2, 1, 1), # Left/right face centers
-                    ]
-                    if (i, j, k) in skip_positions:
-                        continue
-                    
-                    # Calculate position of this sub-cube
-                    offset = np.array([
-                        (i - 1) * new_size,
-                        (j - 1) * new_size, 
-                        (k - 1) * new_size
-                    ])
-                    new_center = center + offset
-                    
-                    # Recursively create sub-sponge
-                    sub_sponge = self.create_menger_sponge(n - 1, new_size, new_center)
-                    sponge_group.add(sub_sponge)
-        
-        return sponge_group
-    
-    def construct(self):
-        S = 3.0 
-        PHI0 = 60 * DEGREES 
-        THETA0 = -90 * DEGREES 
-        ROT_RATE = 0.12 
-        COLOR = BLUE
+        self.play(Write(prompt, run_time = 0.7))
+        self.wait(1)
 
-        self.set_camera_orientation(phi = PHI0, theta = THETA0, zoom = 1.0)
-        self.begin_ambient_camera_rotation(rate = ROT_RATE)
+        self.play(Create(code2))
+        self.wait()
+        self.play(code2.animate.shift(0.5 * UP))
 
-        LABEL_POS = 3.2 * UP 
+        conclusion = MathTex(r"C(\texttt{s}) \leq \operatorname{length}(\texttt{s}) + \text{constant}", font_size = 60, color = WHITE).move_to(2 * DOWN)
+        arrow = Arrow([0, code2.get_bottom()[1], 0], [0, conclusion.get_top()[1], 0], stroke_width = 5, color = WHITE)
 
-        def make_label(t): # create a HUD label
-            return MathTex(t, font_size = 64).move_to(LABEL_POS)
-
-        label = make_label(r"0\text{D}") 
-        self.add_fixed_in_frame_mobjects(label)
-
-        def update_label(t): 
-            new = make_label(t)
-            self.play(Transform(label, new), run_time = 0.3)
-
-        # 0D
-        ring = Circle(radius = 0.3, color = COLOR, stroke_width = 14).set_fill(opacity = 0.0)
-        self.play(FadeIn(ring))
-        
-        dot = Dot(radius = 0.08, color = COLOR)
-        self.play(ReplacementTransform(ring, dot), run_time = 0.6)
+        self.play(AnimationGroup(GrowArrow(arrow), Write(conclusion), lag_ratio = 1), run_time = 2)
         self.wait(2)
 
-        # 1D
-        L = ValueTracker(0.0) # length
+        G = VGroup(prompt, code2, arrow, conclusion)
+        self.play(G.animate.shift(2 * UP), FadeOut(prompt, shift = 2 * UP))
 
-        line = always_redraw(
-            lambda: Line(
-                start = LEFT * (L.get_value() / 2),
-                end = RIGHT * (L.get_value() / 2),
-                color = COLOR,
-                stroke_width = 10,
-            )
-        )
-
-        self.add(line)
-        self.play(
-            L.animate.set_value(S),
-            FadeOut(dot, scale = 0.5),
-            run_time = 1.8,
-            rate_func = rate_functions.ease_in_out_sine,
-        )
-        update_label(r"1\text{D}")
-        self.wait(0.3)
-
-        # 2D
-        H = ValueTracker(0.0)
-
-        square_fill = always_redraw(
-            lambda: Rectangle(
-                width = S,
-                height = max(H.get_value(), 1e-3),
-                stroke_width = 0,
-                fill_opacity = 0.95,
-                color = COLOR,
-                fill_color = COLOR,
-            )
-        )
-
-        self.add(square_fill)
-        self.play(
-            H.animate.set_value(S),
-            line.animate.set_opacity(0.0),
-            run_time = 1.8,
-            rate_func = smooth,
-        )
-        self.remove(line)
-        update_label(r"2\text{D}")
-        self.wait(0.4)
-
-        # 3D
-        D = ValueTracker(1e-3)
-
-        prism = always_redraw(
-            lambda: Prism(
-                dimensions = (S, S, max(D.get_value(), 1e-3))
-            ).set_fill(COLOR, opacity = 0.95).set_stroke(width = 0)
-        )
-
-        self.add(prism)
-        self.remove(square_fill)
-        self.play(
-            D.animate.set_value(S),
-            run_time = 2.0,
-            rate_func = rate_functions.ease_in_out_sine,
-        )
-        update_label(r"3\text{D}")
-
-        self.wait(2)
-
-        footer = MathTex(r"\text{geometric dimension}", font_size = 64).to_edge(DOWN)
-        self.add_fixed_in_frame_mobjects(footer)
-        self.play(Write(footer), run_time = 1)
+        conclusion2 = VGroup(
+                        Tex(r"Normalized complexity: ", font_size = 60, color = WHITE),   
+                        MathTex(r"\frac{C(\texttt{s})}{\operatorname{length}(\texttt{s})}", font_size = 60, color = WHITE)
+                      ).arrange(RIGHT, buff = 0.4).move_to(2.3 * DOWN)
+        arrow2 = Arrow(conclusion.get_bottom(), conclusion2.get_top() + 0.5 * DOWN, stroke_width = 5, color = WHITE)
+        
+        self.play(AnimationGroup(GrowArrow(arrow2), Write(conclusion2), lag_ratio = 1), run_time = 2)
         self.wait(3)
-        self.play(FadeOut(label, footer, prism), run_time = 0.5)
-
-        # Menger Sponge
-        menger = MathTex(r"\text{Menger sponge}", font_size = 64).to_edge(UP)
-        note = MathTex(r"\operatorname{dim}_{\operatorname{fractal}} = \frac{\log 20}{\log 3} \approx 2.7268", font_size = 50).to_edge(DOWN)
-        self.add_fixed_in_frame_mobjects(menger)
-        sponge = self.create_menger_sponge(n = 3, size = S)
-        sponge.set_color(BLUE)
-        self.play(FadeIn(sponge), Write(menger))
-        self.wait(5)
-        self.add_fixed_in_frame_mobjects(note)
-        self.play(Write(note))
-        self.wait(3)
-        self.play(FadeOut(sponge, menger, note), run_time = 0.5)
-
-        self.stop_ambient_camera_rotation()
-
-        cube_obj = Cube(side_length = S).set_fill(COLOR, opacity = 0.95).set_stroke(width = 0)
-        self.play(FadeIn(cube_obj), run_time = 0.6)
-
-        # Picking a point on the top face (z = S / 2) and slightly offset in x-y
-        p = 0.6 * (S / 2) * LEFT + 0.25 * (S / 2) * UP + (S / 2 + 0.01) * OUT
-        marker = Sphere(radius = 0.02).set_fill(RED, opacity = 1.0).set_stroke(width = 0).move_to(p)
-        self.play(FadeIn(marker), run_time = 0.6)
-        self.wait(0.5)
-
-        # Pan the cube so the chosen point moves to the screen center and zoom in
-        self.play(
-            cube_obj.animate.shift(-p),
-            marker.animate.shift(-p),
-            run_time = 0.5,
-            rate_func = rate_functions.ease_in_out_sine,
-        )
-        self.move_camera(zoom = 11, run_time = 1.2, rate_func = rate_functions.ease_in_out_quad)
+        
+        self.play(FadeOut(conclusion2[0]), conclusion2[1].animate.move_to([0, conclusion2[0].get_y() - 0.5, 0]))
+        
         self.wait(4)
 
-        # Go back
-        self.move_camera(zoom = 1.0, run_time = 1.2, rate_func = rate_functions.ease_in_out_quad)
-        self.play(
-            cube_obj.animate.shift(p),
-            marker.animate.shift(p),
-            run_time = 0.5,
-            rate_func = rate_functions.ease_in_out_sine,
-        )
-        self.play(FadeOut(marker), run_time = 0.5)
-        self.wait(0.5)
+        self.play(*[FadeOut(mob) for mob in self.mobjects])
 
-        question = MathTex(r"\text{Is dimension only a \textit{macroscopic} property?}", font_size = 50).to_edge(UP)
-        self.add_fixed_in_frame_mobjects(question)
-        self.play(Write(question), run_time = 1)
-        self.wait(3)
-        self.play(FadeOut(question), run_time = 0.5)
-
-class all_text(Scene):
+# What is an algorithm?
+class Use_Python(Scene):
     def construct(self):
-        section_titles = ['Geometric Dimension', 'Compression', 'Dimension from Compression']
-        formulas = [
-            {
-                'title': 'Point-to-Set Principle',
-                'math': r'\operatorname{dim}_{\operatorname{fractal}}(S) = \max_{x \in S} \operatorname{dim}(x) = \max_{x \in S} \lim_{r \to \infty} \frac{C(x \upharpoonright r)}{r}',
-            },
-            {
-                'title': 'Effective dimension',
-                'math': r'\operatorname{dim}(x) = \lim_{r \to \infty} \frac{C(x \upharpoonright r)}{r}',
-            }
-        ]
 
-        write_speed = 0.75
+        label = Tex("What is an algorithm?", font_size = 64)
+        self.play(Write(label), run_time = 0.7)
         self.wait(2)
-        for s in section_titles:
-            T = Text(s, font_size = 64)
-            self.play(Write(T), run_time = write_speed)
-            self.wait(2)
-            self.play(Unwrite(T), run_time = write_speed)
-            self.wait(2)
+        self.play(Unwrite(label), run_time = 0.7)
 
         self.wait(2)
-        for s in formulas:
-            T = Text(s['title'], font_size = 64).move_to(UP * 2)
-            M = MathTex(s['math'], font_size = 45)
-            self.play(Write(T), Write(M), run_time = write_speed)
-            self.wait(5)
-            self.play(Unwrite(T), Unwrite(M), run_time = write_speed)
-            self.wait(2)
+
+        code = Code(
+            code_string = '''
+def factorial(n):
+    if n == 0:
+        return 1
+    return n * factorial(n - 1)
+    
+print(factorial(10))
+''',
+            background = "window",
+            paragraph_config = {"font_size": 30},
+            add_line_numbers = True
+        )
+        self.play(Create(code), run_time = 1.5)
+
+        self.wait(2)
+        
+        self.play(AnimationGroup(ShrinkToCenter(code)))
+        self.wait(1)
 
 # View numbers as files
 class Numbers_As_Files(Scene):
     def construct(self):
-        title = Text("Real numbers have infinite binary expansions:").move_to(2 * UP)
+        title = Tex("Real numbers have infinite binary expansions:", font_size = 64).move_to(2 * UP)
         self.play(Write(title), run_time = 0.75)
 
         # --- Phase 1: a couple of example lines (π, e) ---
@@ -1344,26 +1217,16 @@ class Numbers_As_Files(Scene):
 
         self.wait(0.6)
 
-        # --- Transition: fade out phase 1 ---
         self.play(
             FadeOut(examples, shift = DOWN, lag_ratio = 0.05),
             FadeOut(title, shift = UP),
         )
         self.wait(0.2)
 
-        # --- Phase 2: x <-> bitstring "file" ---
-
-        title2 = Text("Real numbers as text files:").move_to(2 * UP)
-        self.play(Write(title2), run_time = 0.75)
-
-        # Left: the real as an infinite binary expansion
         left_expr = MathTex(r"x \;=\; 0.011010010\cdots", font_size = 56)
 
-        # Middle: a double arrow
         dbl_arrow = MathTex(r"\longleftrightarrow", font_size = 56)
 
-        # Right: a Code "file" with the raw bitstring
-        # (Using your parameter style; keep quotes simple to avoid escaping)
         bitstring = "011010010..."
         left_rendered_code = Code(
             code_string = bitstring,
@@ -1375,8 +1238,8 @@ class Numbers_As_Files(Scene):
         ).scale(0.9)
 
         # Layout
-        
-        group = VGroup(left_expr, dbl_arrow, left_rendered_code).arrange(RIGHT, buff = 0.8).to_edge(LEFT, buff = 1.2)
+        group = VGroup(left_expr, dbl_arrow, left_rendered_code).arrange(RIGHT, buff = 0.8)
+        group.shift(1.5 * UP)
         self.play(Write(left_expr))
         self.play(
             FadeIn(dbl_arrow, shift = UP * 0.2),
@@ -1384,118 +1247,244 @@ class Numbers_As_Files(Scene):
         )
         self.wait(0.5)
 
-        # (Optional) Subtle emphasis pulse on the arrow
         self.play(dbl_arrow.animate.scale(1.12), run_time = 0.25)
         self.play(dbl_arrow.animate.scale(1 / 1.12), run_time = 0.25)
         self.wait(2)
 
+        left_copy = left_expr.copy()
+        self.add(left_copy)
+        self.play(left_copy.animate.shift(DOWN * 2))
+        self.wait(0.2)
+        new_left = MathTex(r"x \upharpoonright n \;=\; 0.\underbrace{0110100}_{n}10\cdots", font_size = 56).move_to(left_copy).shift(0.4 * LEFT + 0.4 * DOWN)
+        self.play(Transform(left_copy, new_left))
+        self.wait()
+
+        question = Tex(r"What's $\frac{C(x \upharpoonright n)}{n}$ as $n \to \infty$?", font_size = 50)
+        question.next_to(left_copy, RIGHT, buff = 0.7).shift(0.3 * UP)
+        self.play(Write(question))
+
+        self.wait(3)
+
         # Remove everything... too many objects
         self.play(*[FadeOut(mob) for mob in self.mobjects])
 
-# Need a scene to explain fractal dimension. Table + definition of fractal dimension as the "appropriate exponent" for a shape
-class DimensionTable3D(ThreeDScene):
-    def construct(self):
-
-        BLUE_FILL = BLUE_D 
-        BLUE_EDGE = BLUE_B 
-
-        def stylize(m):
-            m.set_fill(BLUE_FILL, opacity=1)
-            m.set_stroke(BLUE_EDGE, width=2, opacity=1)
-            return m
-
-        DOT = Tex("\vdots").set_opacity(0).set_stroke(width=0)
-
-        cells = [
-            [Tex(r"Dimension"), Tex(r"0D"), Tex(r"1D"), Tex(r"2D"), Tex(r"3D")],
-            [Tex(r"Shape"), DOT.copy(), DOT.copy(), DOT.copy(), DOT.copy()],
-            [Tex(r"Size"), DOT.copy(), MathTex(r"\text{Length} = \ell^{{1}}"), MathTex(r"\text{Area} = \ell^{{2}}"), MathTex(r"\text{Volume} = \ell^{{3}}")],
-            [Tex(r"Shape"), DOT.copy(), DOT.copy(), DOT.copy(), DOT.copy()],
-            [Tex(r"Size"), DOT.copy(), MathTex(r"\text{Length} = 2r^{{1}}"), MathTex(r"\text{Area} = \pi r^{{2}}"), MathTex(r"\text{Volume} = \tfrac{4}{3}\,\pi r^{{3}}")]
-        ]
-
-        tbl = MobjectTable(
-            cells,
-            include_outer_lines = True,
-            line_config = {"stroke_color": WHITE, "stroke_width": 2},
-            v_buff = 0.35, h_buff = 0.6,
-        ).scale(0.9)
-
-        self.add_fixed_in_frame_mobjects(tbl)
-        self.play(FadeIn(tbl))
-        self.wait(0.2)
-
-        # --- Helpers ---
-        def place_in_cell(mobj: Mobject, row: int, col: int, scale=1.0, pad=0.75):
-            target = tbl.get_cell((row, col))
-            max_w = target.width * pad
-            max_h = target.height * pad
-            if mobj.width > max_w:
-                mobj.scale(max_w / mobj.width)
-            if mobj.height > max_h:
-                mobj.scale(max_h / mobj.height)
-            if scale != 1.0:
-                mobj.scale(scale)
-            mobj.move_to(target.get_center())
-            return mobj
-
-        def shade2d(m: Mobject):
-            if hasattr(m, "set_shade_in_3d"):
-                m.set_shade_in_3d(True)
-            return m
-        point_l = stylize(shade2d(Sphere(radius = 0.08, resolution = (16, 16))))
-        line_l = Line3D(0.8 * LEFT, 0.8 * RIGHT, thickness = 0.06, color = BLUE_FILL)
-        line_l.set_stroke(BLUE_EDGE, width = 1, opacity = 1)
-        square = stylize(shade2d(Square(side_length = 1.35)))
-        cube = stylize(Cube(side_length = 1.15))
-
-        place_in_cell(point_l, 2, 2)
-        place_in_cell(line_l, 2, 3)
-        place_in_cell(square, 2, 4)
-        place_in_cell(cube, 2, 5)
-
-        self.play(GrowFromCenter(point_l))
-        self.play(FadeIn(line_l))
-        self.play(FadeIn(square))
-        self.play(FadeIn(cube))
-        self.wait(0.4)
-
-        point_r = stylize(shade2d(Sphere(radius=0.08, resolution=(16, 16))))
-        line_r = Line3D(0.8 * LEFT, 0.8 * RIGHT, thickness=0.06, color=BLUE_FILL)
-        line_r.set_stroke(BLUE_EDGE, width=1, opacity=1)
-
-        disk = stylize(Cylinder(radius=0.72, height=0.06, direction=OUT, resolution=28))
-        ball = stylize(Sphere(radius=0.68, resolution=(32, 32)))
-
-        place_in_cell(point_r, 4, 2)
-        place_in_cell(line_r, 4, 3)
-        place_in_cell(disk, 4, 4)
-        place_in_cell(ball, 4, 5)
-
-        self.play(GrowFromCenter(point_r))
-        self.play(FadeIn(line_r))
-        self.play(FadeIn(disk))
-        self.play(FadeIn(ball))
-
-        self.wait(1.2)
-
-# Need a scene that explains the ratio \frac{C(x \upharpoonright n)}{n}, so shows this across prefixes. 
-class Explain_Incompressibility_Ratio(Scene):
-    def construct(self):
-        pass
-
-# Need another scene that assures the audience that no matter the formalism for Turing machines, get same notion.
-class Explain_Algorithms(Scene):
-    def construct(self):
-        pass
+###### EFFECTIVE DIMENSION + PTS #######
 
 # Might have to add some attributions to the PTS slide, as well as yellow text explaining in words
+class PTS_Statement(Scene):
+    def construct(self):
 
+        m = VGroup(
+            MathTex(r"\operatorname{dim}_{\operatorname{fractal}}(S)", font_size = 50, color = WHITE),
+            MathTex(r"=", font_size = 50, color = WHITE),
+            MathTex(r"\max_{x \in S} \operatorname{dim}(x)", font_size = 50, color = WHITE),
+            MathTex(r"=", font_size = 50, color = WHITE),
+            MathTex(r"\max_{x \in S} \lim_{n \to \infty} \frac{C(x \upharpoonright n)}{n}", font_size = 50, color = WHITE)
+        ).arrange(RIGHT, buff = 0.5).move_to(2 * UP)
+        m[2].shift(DOWN * 0.1)
 
-# ------------ Example: Cantor set --------------
+        m.set_z_index(100)
+
+        emphasize_list = [ 0, 2, 4 ]
+
+        background = SurroundingRectangle(
+            m,
+            color = GOLD,
+            fill_color = DARK_BLUE,
+            fill_opacity = 0.3,
+            buff = 0.4,
+            stroke_width = 4,
+            corner_radius = 0.1
+        )
+
+        label = Text("THE POINT-TO-SET PRINCIPLE", font_size = 24, color = GOLD, weight = BOLD)
+        label.next_to(background, UP, buff = 0.2)
+
+        bottom_label = Tex(r"\parbox{30cm}{J. Lutz and N. Lutz. \textit{Algorithmic information, plane Kakeya sets, and conditional dimension}. 2018.}", font_size = 14, color = WHITE)
+        bottom_label2 = Tex(r"\parbox{30cm}{\textit{Notes}:", font_size = 14, color = WHITE)
+        bottom_label3 = Tex(r"\parbox{30cm}{– We should really take the \textit{supremum} over $x \in S$,}", font_size = 14)
+        bottom_label4 = Tex(r"\parbox{30cm}{– This statement only works for certain simple sets, $S$ which are $\Sigma^0_2$,}", font_size = 14)
+        bottom_label5 = Tex(r"\parbox{30cm}{– The limit of the normalized Kolmogorov complexity may not exist.}", font_size = 14)
+
+        bottom_label.scale(2).next_to(background, DOWN, aligned_edge = LEFT, buff = 0.3).shift(0.1 * RIGHT)
+        bottom_label2.scale(2).next_to(bottom_label, DOWN, aligned_edge = LEFT, buff = 0.2)
+        bottom_label3.scale(2).next_to(bottom_label2, DOWN, aligned_edge = LEFT, buff = 0.2).shift(RIGHT)
+        bottom_label4.scale(2).next_to(bottom_label3, DOWN, aligned_edge = LEFT, buff = 0.2)
+        bottom_label5.scale(2).next_to(bottom_label4, DOWN, aligned_edge = LEFT, buff = 0.2)
+
+        self.play(Create(background), Write(m), FadeIn(label))
+        self.play(AnimationGroup(Write(bottom_label), Write(bottom_label2), Write(bottom_label3), Write(bottom_label4), Write(bottom_label5), lag_ratio = 0.2))
+        
+        self.wait(2)
+
+        for e in emphasize_list:
+            self.play(m[e].animate.scale(1.1), run_time = 0.3)
+            self.wait(0.2)
+            self.play(m[e].animate.scale(1 / 1.1), run_time = 0.3)
+            self.wait(2)
+
+        explanation = Tex(r"\parbox{30cm}{A set's fractal dimension reflects the maximal effective dimension across its points.}", color = YELLOW, font_size = 35).move_to(2.5 * DOWN)
+        explanation2 = Tex(r"\parbox{30cm}{That is, a set's dimension comes from its least compressible points.}", color = YELLOW, font_size = 35).next_to(explanation, DOWN, aligned_edge = LEFT)
+        self.play(Write(explanation))
+        self.wait()
+        self.play(Write(explanation2))
+
+        self.wait(2)
+        self.play(*[FadeOut(mob) for mob in self.mobjects])
+
+# Why effective dimension is a dimension notion?
+class EffectiveDimensionDyadic(Scene):
+    LEFT_PANEL_WIDTH = 8.0
+    GRID_HALF = 3.0
+    MAX_LEVEL = 6
+
+    def construct(self):
+        left_group = VGroup()
+
+        blob = self.make_blob().scale(1.1)
+        blob.set_fill(color = BLUE_E, opacity = 0.35).set_stroke(BLUE_D, width = 6)
+        blob_label = MathTex("S", font_size = 48).move_to(blob.get_center() + 0.6 * UP + 0.2 * RIGHT)
+
+        blob_group = VGroup(blob, blob_label)
+        left_group.add(blob_group)
+
+        x_point = Dot(point=np.array([-0.78, -0.285, 0]), color = YELLOW, radius = 0.08)
+        x_label = MathTex("x", font_size = 40).next_to(x_point, UP * 0.7 + RIGHT * 0.4)
+        left_group.add(x_point, x_label)
+
+        Q_label = MathTex("Q(x, n) = ")
+        yellow_square = Square(0.2, fill_color = YELLOW, color = YELLOW).next_to(Q_label, RIGHT, buff = 0.2)
+        Q_group = VGroup(Q_label, yellow_square).move_to(3.5 * DOWN)
+        left_group.add(Q_group)
+
+        frame_square = Square(side_length = 2 * self.GRID_HALF)
+        frame_square.set_stroke(GREY_B, width = 1.5, opacity = 1.0)
+        frame_square.move_to(blob.get_center())
+        left_group.add(frame_square)
+
+        ####### explanation
+        fs = 36
+
+        setup = Tex(r'Suppose $x \in S$ has largest $\operatorname{dim}(x)$.', font_size = fs)
+        m = Tex(r'Notice $C(x \upharpoonright n) \approx C(Q(x, n))$.', font_size = fs)
+        
+        prompt = Tex(r'So, for any $n$, if $\frac{C(x \upharpoonright n)}{n} = d$,', font_size = fs)
+        conclusion1 = Tex(r'$n$ bits of information determine $Q\left(x, \frac{n}{d}\right)$', font_size = fs)
+        arrow1 = Arrow(conclusion1.get_top(), prompt.get_bottom(), stroke_width = 5)
+        conclusion2 = Tex(r'$\therefore$ scaling $S$ by $2$ $\rightsquigarrow$ scaling $\operatorname{size}(S)$ by $2^d$.', font_size = fs)
+        arrow2 = Arrow(conclusion2.get_top(), conclusion1.get_bottom(), stroke_width = 5)
+
+        right_group = VGroup(setup, m, prompt, arrow1, conclusion1, arrow2, conclusion2).arrange(DOWN, aligned_edge = LEFT, buff = 0.4)
+        arrow1.set_x(0)
+        arrow2.set_x(0)
+        right_group.to_edge(RIGHT, buff = 0.1)
+
+        left_group.to_edge(LEFT, buff = 1)
+
+        self.play(
+            FadeIn(blob, shift = 0.2 * UP),
+            FadeIn(blob_label),
+            FadeIn(x_point, scale = 0.8),
+            FadeIn(x_label),
+            FadeIn(frame_square),
+            FadeIn(Q_group), 
+            Write(setup)
+        )
+
+        highlight = None
+        for n in range(self.MAX_LEVEL + 1):
+            # Build the grid for this level
+            grid = self.make_dyadic_grid(n, frame_square)
+            grid.set_stroke(GREY_D, width = 1.0, opacity = 0.8)
+
+            # Compute and draw the highlighted square containing x
+            cell = self.cell_containing_point(n, frame_square, x_point.get_center())
+            cell.set_stroke(YELLOW, width = 6).set_fill(YELLOW, opacity = 0.18)
+
+            # Update right-panel level indicator
+            self.play(
+                FadeIn(grid, lag_ratio = 0.02, run_time = 0.4)
+            )
+
+            # Replace previous highlight (if any) with the refined one
+            if highlight is None:
+                self.play(FadeIn(cell, run_time = 0.5))
+            else:
+                self.play(ReplacementTransform(highlight, cell, run_time = 0.3))
+
+            # keep references for next loop
+            highlight = cell
+
+            self.wait(0.2)
+
+            # If there is another level coming, fade this grid (but keep highlight until swapped)
+            if n < self.MAX_LEVEL:
+                self.play(FadeOut(grid, run_time = 0.3))
+
+        self.wait(5)
+
+        self.play(AnimationGroup(Write(m), Write(prompt), GrowArrow(arrow1), Write(conclusion1), GrowArrow(arrow2), Write(conclusion2), lag_ratio = 3), run_time = 20)
+        
+        self.wait(6)
+
+        self.play(*[FadeOut(mob) for mob in self.mobjects])
+
+    # HELPERS
+
+    def make_blob(self) -> VMobject:
+        pts = [
+            [-2.9, -0.6, 0],
+            [-2.1, -1.1, 0],
+            [-1.0, -1.2, 0],
+            [-0.2, -0.5, 0],
+            [ 0.7, -1.3, 0],
+            [ 1.6, -1.8, 0],
+            [ 2.4, -0.4, 0],
+            [ 1.7, 1.4, 0],
+            [ 0.2, 1.9, 0],
+            [-1.2, 1.0, 0],
+            [-2.4, 0.2, 0],
+            [-2.9, -0.2, 0],
+        ]
+        vm = VMobject()
+        vm.set_points_smoothly([*map(np.array, pts), np.array(pts[0])])
+        vm.close_path()
+        return vm
+
+    def make_dyadic_grid(self, n: int, frame_square: Square) -> VGroup:
+        L = 2 * self.GRID_HALF
+        step = L / (2 ** n)
+        bl = frame_square.get_center() + np.array([-self.GRID_HALF, -self.GRID_HALF, 0])
+
+        lines = VGroup()
+        for i in range(2 ** n + 1):
+            x = bl[0] + i * step
+            lines.add(Line([x, bl[1], 0], [x, bl[1] + L, 0]))
+        for j in range(2 ** n + 1):
+            y = bl[1] + j * step
+            lines.add(Line([bl[0], y, 0], [bl[0] + L, y, 0]))
+        return lines
+
+    def cell_containing_point(self, n: int, frame_square: Square, p: np.ndarray) -> Square:
+        L = 2 * self.GRID_HALF
+        step = L / (2 ** n)
+        origin = frame_square.get_center() + np.array([-self.GRID_HALF, -self.GRID_HALF, 0])
+
+        i = int(np.floor((p[0] - origin[0]) / step))
+        j = int(np.floor((p[1] - origin[1]) / step))
+
+        i = max(0, min((2 ** n) - 1, i))
+        j = max(0, min((2 ** n) - 1, j))
+
+        cx = origin[0] + (i + 0.5) * step
+        cy = origin[1] + (j + 0.5) * step
+        cell = Square(side_length=step).move_to([cx, cy, 0])
+        return cell
+
+###### EXAMPLE: CANTOR SET #######
 
 # To apply the PTS principle to, say, the Cantor set, we'll need a couple slides. 
-class CantorSetConstructionred(Scene):
+class CantorSetConstructionRed(Scene):
     DEPTH = 4
     BAR_HEIGHT = 2 
     LINE_Y = -3.0
@@ -1612,6 +1601,9 @@ class CantorSetConstructionred(Scene):
             current_bars = new_bars
 
         if self.INCLUDE_RED:
+            construction_group = VGroup(*[mob for mob in self.mobjects if isinstance(mob, VMobject)])
+            self.play(FadeOut(construction_group))
+
             m = MathTex(
                 r'x \in \text{Cantor} \longleftrightarrow \operatorname{ternary}(x) \text{ has no 1s}',
                 font_size = 65,
@@ -1629,16 +1621,270 @@ class CantorSetConstructionred(Scene):
 
             label = Text("MAIN OBSERVATION", font_size = 24, color = GOLD, weight = BOLD)
             label.next_to(background, UP, buff = 0.2)
-            prominent_fact = VGroup(background, m, label)
             self.play(Write(m), Create(background), FadeIn(label))
+
+            x_label = MathTex(
+                r'x = (0.220020020220222020\cdots)_3',
+                font_size = 55,
+                color = WHITE
+            ).move_to(2 * DOWN)
+            arrow = Arrow(
+                background.get_bottom(), 
+                x_label.get_top(),
+                buff = 0.2,
+                stroke_width = 4,
+                color = GRAY_A
+            )
+            implication_anims = [GrowArrow(arrow), Write(x_label)]
+            self.play(AnimationGroup(*implication_anims, lag_ratio = 0.3))
+
         else:
             self.play(FadeIn(VGroup(x_bar, x_eq), shift = UP * 0.1), run_time = 0.5)
             self.wait(0.5)
-            self.play(x_tracker.animate.set_value(0.04), run_time = 1.0)
-            self.play(x_tracker.animate.set_value(0.68), run_time = 1.2)
-            self.play(x_tracker.animate.set_value(0.89), run_time = 0.9)
-            self.play(x_tracker.animate.set_value(2 / 3 + 1 / 81), run_time = 1.0)
-            self.play(x_tracker.animate.set_value(1 / 2), run_time = 1.0)
+            self.play(x_tracker.animate.set_value(1 / 9 - 0.01), run_time = 1.0)
+            self.wait(0.6)
+            self.play(x_tracker.animate.set_value(5 / 9 + 0.013), run_time = 1.2)
+            self.wait(0.6)
+            self.play(x_tracker.animate.set_value(8 / 9 + 0.001), run_time = 0.9)
+            self.wait(0.6)
+            self.play(x_tracker.animate.set_value(19.5 / 27), run_time = 1.0)
+            self.wait(0.6)
+            self.play(x_tracker.animate.set_value(1 / 27 - 0.001), run_time = 1.0)
+            self.wait(0.6)
+            self.play(x_tracker.animate.set_value(4 / 9), run_time = 1.0)
+
+        self.wait(4)
+        self.play(*[FadeOut(mob) for mob in self.mobjects])
+
+    # ---------- helpers ----------
+
+    def interval_rect(self, nl: NumberLine, a: float, b: float, y: float) -> Rectangle:
+        xa = nl.number_to_point(a)[0]; xb = nl.number_to_point(b)[0]
+        w = abs(xb - xa); cx = 0.5 * (xa + xb)
+        return self.make_bar_at_width(w, self.BAR_HEIGHT, [cx, y, 0])
+
+    def make_bar_at_width(self, width, height, center, color = BLUE_D, stroke = BLUE_E) -> Rectangle:
+        r = Rectangle(width = width, height = height,
+                      fill_color = color, stroke_color = stroke, stroke_width = 2)
+        r.set_fill(color, opacity = 1.0).move_to(center)
+        return r
+
+    def make_custom_ticks(self, nl: NumberLine):
+        ticks = VGroup(); labels = VGroup()
+        def tick_at(x, h = 0.18, sw = 2):
+            p = nl.number_to_point(x)
+            return Line(p + DOWN * h / 2, p + UP * h / 2, stroke_width = sw, color = WHITE)
+        # 0 and 1
+        for x, s in [(0, "0"), (1, "1")]:
+            t = tick_at(x, h = 0.28, sw = 3.2)
+            lbl = MathTex(s).scale(0.8).next_to(t, DOWN, buff = 0.12)
+            ticks.add(t); labels.add(lbl)
+        # thirds
+        for k in [1, 2]:
+            x = k/3
+            t = tick_at(x, h = 0.24, sw = 2.4)
+            lbl = MathTex(rf"\tfrac{{{k}}}{{3}}").scale(0.8).next_to(t, DOWN, buff = 0.12)
+            ticks.add(t); labels.add(lbl)
+        # ninths
+        for k in range(1, 9):
+            x = k / 9
+            if x in {1 / 3, 2 / 3}: continue
+            t = tick_at(x, h = 0.20, sw = 2.0)
+            lbl = MathTex(rf"\tfrac{{{k}}}{{9}}").scale(0.7).next_to(t, DOWN, buff = 0.10)
+            ticks.add(t); labels.add(lbl)
+        # 27ths (unlabeled)
+        ninths = {k / 9 for k in range(1, 9)}
+        for k in range(1, 27):
+            x = k/27
+            if x in {0, 1, 1 / 3, 2/3} or x in ninths: continue
+            ticks.add(tick_at(x, h = 0.14, sw = 1.6))
+        return ticks, labels
+
+    def ternary_equation_tex(self, x: float, k: int) -> MathTex:
+        digs = self.ternary_digits(x, k)
+        s = r"x \,=\, 0." + "".join(str(d) for d in digs) + r"\,{}_3"
+        tex = MathTex(s, substrings_to_isolate = ["x"])
+        tex.set_color_by_tex("x", YELLOW)
+        return tex
+
+    def ternary_digits(self, x: float, k: int):
+        x = min(max(x, 0.0), 1.0)
+        f = Fraction(x).limit_denominator(3**(k + 3))
+        out = []
+        for _ in range(k):
+            f *= 3
+            d = int(f); out.append(d); f -= d
+        return out
+
+# Just like above, except slides around an x value, no red rectangles
+class CantorSetConstruction(Scene):
+    DEPTH = 5
+    BAR_HEIGHT = 2 
+    LINE_Y = -3.0
+    TERNARY_DIGITS = 5 
+    DOT_SIZE = 0.1 
+    TOTAL_WIDTH = 11.0
+    X_BAR_LEN = 1.6
+    INCLUDE_RED = False
+
+    def construct(self):
+        nl = NumberLine(
+            x_range = [0, 1, 1 / 27],
+            include_ticks = False, include_numbers = False,
+            length = self.TOTAL_WIDTH,
+        )
+        nl.set_z_index(100) 
+
+        ticks, labels = self.make_custom_ticks(nl)
+        ticks.set_z_index(100)
+        labels.set_z_index(100)
+        self.add(nl, ticks, labels)
+
+        y_bar = 0
+        current_bars = VGroup(self.interval_rect(nl, 0.0, 1.0, y = y_bar))
+        current_bars[0].set_z_index(20)
+        self.play(GrowFromCenter(current_bars[0]))
+
+        x_tracker = ValueTracker(0.5)
+        x_bar = always_redraw(lambda:
+            Line(
+                nl.number_to_point(x_tracker.get_value()),
+                nl.number_to_point(x_tracker.get_value()) + UP * self.X_BAR_LEN,
+                stroke_width = 4, color = YELLOW
+            )
+        )
+
+        x_eq = always_redraw(lambda:
+            self.ternary_equation_tex(x_tracker.get_value(), self.TERNARY_DIGITS)
+                .scale(0.8)
+                .next_to(
+                    VectorizedPoint(nl.number_to_point(x_tracker.get_value()) + UP * self.X_BAR_LEN),
+                    UP + 0.6 * RIGHT, buff = 0.12
+                )
+        )
+
+        x_bar.set_z_index(105)
+        x_eq.set_z_index(105)
+
+        for depth in range(self.DEPTH):
+            split_anims = []
+            new_bars = VGroup()
+            stage_halves = [] 
+
+            # Phase 1: split each bar into two half-width bars centered at ± w/4
+            for bar in current_bars:
+                cx, cy, _ = bar.get_center()
+                w = bar.get_width()
+
+                left_half = self.make_bar_at_width(w / 2, height = self.BAR_HEIGHT, center=[cx - w / 4, cy, 0])
+                right_half = self.make_bar_at_width(w / 2, height = self.BAR_HEIGHT, center=[cx + w / 4, cy, 0],
+                                                    color = bar.get_fill_color(), stroke = bar.get_stroke_color())
+
+                left_half.set_z_index(20)
+                right_half.set_z_index(20)
+
+                split_anims.append(Transform(bar, left_half))
+                split_anims.append(TransformFromCopy(bar, right_half))
+
+                stage_halves.append((bar, right_half))  # references after the split
+
+            self.play(AnimationGroup(*split_anims, lag_ratio = 0.06), run_time = 0.9)
+
+            # Phase 2: shrink each half to third-width and slide to ± w/3 centers
+            slide_anims = []
+            red_anims = []
+            red_labels = [r'.1', r'.\_1', r'.\_\_1', r'.\_\_\_1', r'.\_\_\_\_1']
+            for left_bar, right_bar in stage_halves:
+                cx, cy, _ = (left_bar.get_center() + right_bar.get_center())/2
+                w_current = left_bar.get_width() * 2  # since each is half of previous
+
+                left_third  = self.make_bar_at_width(w_current / 3, self.BAR_HEIGHT, [cx - w_current / 3, cy, 0],
+                                                     color = left_bar.get_fill_color(), stroke = left_bar.get_stroke_color())
+                right_third = self.make_bar_at_width(w_current / 3, self.BAR_HEIGHT, [cx + w_current / 3, cy, 0],
+                                                     color = right_bar.get_fill_color(), stroke = right_bar.get_stroke_color())
+
+                left_third.set_z_index(20)
+                right_third.set_z_index(20)
+
+                slide_anims += [Transform(left_bar, left_third), Transform(right_bar, right_third)]
+                new_bars.add(left_bar, right_bar)
+
+                if self.INCLUDE_RED:
+                    red_third = self.make_bar_at_width(w_current / 3, self.BAR_HEIGHT, [cx, cy, 0],
+                                                        color = RED_D, stroke = RED_E)
+                    red_third.set_z_index(20)
+                    x = cx / self.TOTAL_WIDTH + 0.5
+                    vertical_spread = 0.45
+                    red_line = Line(
+                        nl.number_to_point(x) + DOWN * self.BAR_HEIGHT / 2,
+                        nl.number_to_point(x) + DOWN * (self.X_BAR_LEN + depth * vertical_spread),
+                        stroke_width = 4, color = WHITE
+                    )
+                    red_text = MathTex(red_labels[depth]).scale(0.8).move_to(
+                        [cx, - 0.25 - self.X_BAR_LEN - depth * vertical_spread, 0]
+                    )
+                    red_label = VGroup(red_line, red_text)
+                    red_label.set_z_index(100)
+                    red_anims += [FadeIn(red_third), FadeIn(red_label)]
+
+            self.play(AnimationGroup(*slide_anims, lag_ratio = 0.06), run_time = 0.9)
+            if self.INCLUDE_RED:
+                self.play(AnimationGroup(*red_anims, lag_ratio = 0.06), run_time = 1)
+                self.wait(1)
+            current_bars = new_bars
+
+        if self.INCLUDE_RED:
+            construction_group = VGroup(*[mob for mob in self.mobjects if isinstance(mob, VMobject)])
+            self.play(FadeOut(construction_group))
+
+            m = MathTex(
+                r'x \in \text{Cantor} \longleftrightarrow \operatorname{ternary}(x) \text{ has no 1s}',
+                font_size = 65,
+                color = WHITE
+            ).move_to(2 * UP)
+            background = SurroundingRectangle(
+                m,
+                color = GOLD,
+                fill_color=DARK_BLUE,
+                fill_opacity = 0.3,
+                buff = 0.4,
+                stroke_width = 4,
+                corner_radius = 0.1
+            )
+
+            label = Text("MAIN OBSERVATION", font_size = 24, color = GOLD, weight = BOLD)
+            label.next_to(background, UP, buff = 0.2)
+            self.play(Write(m), Create(background), FadeIn(label))
+
+            x_label = MathTex(
+                r'x = (0.220020020220222020\cdots)_3',
+                font_size = 55,
+                color = WHITE
+            ).move_to(2 * DOWN)
+            arrow = Arrow(
+                background.get_bottom(), 
+                x_label.get_top(),
+                buff = 0.2,
+                stroke_width = 4,
+                color = GRAY_A
+            )
+            implication_anims = [GrowArrow(arrow), Write(x_label)]
+            self.play(AnimationGroup(*implication_anims, lag_ratio = 0.3))
+
+        else:
+            self.play(FadeIn(VGroup(x_bar, x_eq), shift = UP * 0.1), run_time = 0.5)
+            self.wait(0.5)
+            self.play(x_tracker.animate.set_value(1 / 9 - 0.01), run_time = 1.0)
+            self.wait(0.6)
+            self.play(x_tracker.animate.set_value(5 / 9 + 0.013), run_time = 1.2)
+            self.wait(0.6)
+            self.play(x_tracker.animate.set_value(8 / 9 + 0.001), run_time = 0.9)
+            self.wait(0.6)
+            self.play(x_tracker.animate.set_value(19.5 / 27), run_time = 1.0)
+            self.wait(0.6)
+            self.play(x_tracker.animate.set_value(1 / 27 - 0.001), run_time = 1.0)
+            self.wait(0.6)
+            self.play(x_tracker.animate.set_value(4 / 9), run_time = 1.0)
 
         self.wait(4)
         self.play(*[FadeOut(mob) for mob in self.mobjects])
@@ -1705,48 +1951,7 @@ class CantorSetConstructionred(Scene):
 
 # Show the two codes for a ternary real    
 class MapTwosToOnes(Scene):
-    def construct(self):
-
-        m = MathTex(
-            r'x \in \text{Cantor} \longleftrightarrow \operatorname{ternary}(x) \text{ has no 1s}',
-            font_size = 65,
-            color = WHITE
-        ).move_to(1.5 * UP)
-
-        # Background with border
-        background = SurroundingRectangle(
-            m,
-            color = GOLD,
-            fill_color = DARK_BLUE,
-            fill_opacity = 0.3,
-            buff = 0.4,
-            stroke_width = 4,
-            corner_radius = 0.1
-        )
-
-        label = Text("MAIN OBSERVATION", font_size = 24, color = GOLD, weight = BOLD)
-        label.next_to(background, UP, buff = 0.5)
-        prominent_fact = VGroup(background, m, label)
-        self.play(Write(m), Create(background), FadeIn(label), run_time = 0.6)
-
-        x_label = MathTex(
-            r'x = (0.220020020220222020\cdots)_3',
-            font_size = 55,
-            color = WHITE
-        ).move_to(1.5 * DOWN)
-        arrow = Arrow(
-            background.get_bottom(), 
-            x_label.get_top(),
-            buff = 0.2,
-            stroke_width = 4,
-            color = GRAY_A
-        )
-        implication_anims = [GrowArrow(arrow), Write(x_label)]
-        self.play(AnimationGroup(*implication_anims, lag_ratio = 0.3))
-
-        self.wait(3)
-        self.play(*[FadeOut(mob) for mob in self.mobjects])
-
+    def construct(self):        
         # Create left code object
         left_rendered_code = Code(
             code_string = '''220020020220222020202022020
@@ -1955,27 +2160,82 @@ class FractionSimplification(Scene):
 class ApplicationOfPTS(Scene):
     def construct(self):
         expressions = [
-            r'1. For each $x \in \operatorname{Cantor}$, we have $\operatorname{dim}(x) \leq \frac{\log 2}{\log 3}$.',
-            r'2. There exists $x \in \operatorname{Cantor}$ with $\frac{C(x \upharpoonright n)}{n}$ is \textit{maximal} for all $n$.',
-            r'3. By the \textit{Point-to-Set Principle}, $\operatorname{dim}_{\operatorname{fractal}}(\operatorname{Cantor}) = \frac{\log 2}{\log 3}$.'
+            [
+                r'1. Since we can shrink codes by a factor of $\frac{\log 2}{\log 3}$,',
+                r'For each $x \in \operatorname{Cantor}$, we have $\operatorname{dim}(x) \leq \frac{\log 2}{\log 3}$.',
+            
+            ],
+            [
+                r'2. Since \textit{any} combination of 0s and 2s is possible,',
+                r'There exists $x \in \operatorname{Cantor}$ where $\frac{C(x \upharpoonright n)}{n}$ is \textit{maximal} for all $n$.',
+            ],
+            [
+                r'3. By the Point-to-Set Principle,',
+                r'$\operatorname{dim}_{\operatorname{fractal}}(\operatorname{Cantor}) = \frac{\log 2}{\log 3}$.'
+            ]
         ]
 
-        t = [Tex(e, font_size = 40, color = WHITE) for e in expressions]
-        T = VGroup(*t).arrange(DOWN, aligned_edge = LEFT, buff = 1)
+        t = []
+        m = []
+        for i in range(len(expressions)):
+            t0 = Tex(expressions[i][0], font_size = 35, color = WHITE)
+            t1 = Tex(expressions[i][1], font_size = 40, color = WHITE).next_to(t0, DOWN, buff = 0.5, aligned_edge = LEFT).shift(0.3 * RIGHT)
+            t.append(VGroup(t0, t1))
+
+        T = VGroup(*t).arrange(DOWN, aligned_edge = LEFT, buff = 1).shift(0.1 * UP)
+        T.set_z_index(100)
+        
         m = [
-                SurroundingRectangle(
-                    e, 
-                    color = GOLD,
-                    fill_color = DARK_BLUE,
-                    fill_opacity = 0.3,
-                    buff = 0.4,
-                    stroke_width = 4,
-                    corner_radius = 0.1
-                ) for e in t
-            ]
+            SurroundingRectangle(
+                _t[1], 
+                color = GOLD,
+                fill_color = DARK_BLUE,
+                fill_opacity = 0.3,
+                buff = 0.4,
+                stroke_width = 4,
+                corner_radius = 0.1
+            ) for _t in t
+        ]
 
         for i in range(len(t)):
             self.play(Write(t[i]), Create(m[i]))
-            self.wait(2)
+            self.wait(5)
 
         self.play(*[FadeOut(mob) for mob in self.mobjects])
+
+###### ENDING #######
+
+# Ending screen
+class EndingScreen(Scene):
+    def construct(self):
+        thank_you = Tex("Thanks for watching!", font_size = 80).to_edge(UP, buff = 2)
+        line = Line(2 * LEFT, 2 * RIGHT, stroke_width = 3).next_to(thank_you, DOWN, buff = 0.7)
+        
+        logo = SVGMobject("symbol.svg")
+        for m in logo.family_members_with_points():
+            m.set_stroke(opacity = 1, width = 8)
+        SoME = Tex("SoME", font_size = 90)
+        SoME_logo = VGroup(logo, SoME).scale(0.8).to_edge(DOWN, buff = 0.6).to_edge(RIGHT, buff = 0.6)
+
+        fs = 36
+        info_table = MobjectTable([
+                [Tex(r'\textbf{Created by}', font_size = fs), Tex('Raymond Tana', font_size = fs)], 
+                [Tex(r'\textbf{Channel}', font_size = fs), Tex('PreterMathematics', font_size = fs)], 
+                [Tex(r'\textbf{Date of Publication}', font_size = fs), Tex('August 31, 2025', font_size = fs)]
+            ],
+            include_outer_lines = False,
+            line_config = {'stroke_opacity': 0},
+            v_buff = 0.35, h_buff = 0.6,
+        ).move_to(1.2 * DOWN)
+
+        # Right-aligned left col, left-aligned right col
+        for i, row in enumerate(info_table.get_rows()):
+            for content in row[0]:
+                content.align_to(info_table.get_columns()[0], RIGHT)
+            for content in row[1]:
+                content.align_to(info_table.get_columns()[1], LEFT)
+
+        self.play(Write(thank_you), FadeIn(logo, shift = 0.5 * DOWN), Write(SoME), GrowFromCenter(line), Create(info_table))
+
+        self.wait(4)
+        self.play(*[FadeOut(mob) for mob in self.mobjects], run_time = 3)
