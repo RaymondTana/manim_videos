@@ -23,6 +23,9 @@ Both of the following options seem to work when within the `klein` directory wit
 - **Commands**: 
     ```
         manim render -pqh --format=mov --transparent -o A.mov main.py UpdatingMatrixAnimation
-        ffmpeg -i media/videos/main/1080p60/A.mov -c:v prores_ks -profile:v 4444 -pix_fmt yuva444p10le B.mov
+        
+        ffmpeg -i media/videos/main/1080p60/A.mov -c:v prores_ks -profile:v 4444 -pix_fmt yuva444p10le B.mov << EOF 
+    y 
+    EOF
     ```
 - **Note**: QuickTime can preview this one!

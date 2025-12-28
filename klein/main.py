@@ -137,15 +137,15 @@ class UpdatingMatrixAnimation(Scene):
         t = ValueTracker(0)
         
         # Time label
-        t_label = DecimalNumber(
-            t.get_value(),
-            num_decimal_places=2,
-            include_sign=False
-        )
-        t_label.add_updater(lambda m: m.set_value(t.get_value()))
-        t_text = MathTex(r't = ')
-        t_group = VGroup(t_text, t_label).arrange(RIGHT, buff=0.2)
-        t_group.to_edge(UP, buff=1)
+        # t_label = DecimalNumber(
+        #     t.get_value(),
+        #     num_decimal_places=2,
+        #     include_sign=False
+        # )
+        # t_label.add_updater(lambda m: m.set_value(t.get_value()))
+        # t_text = MathTex(r't = ')
+        # t_group = VGroup(t_text, t_label).arrange(RIGHT, buff=0.2)
+        # t_group.to_edge(UP, buff=1)
         
         # Create the stable matrix
         matrix = UpdatingMatrix(
@@ -159,23 +159,41 @@ class UpdatingMatrixAnimation(Scene):
         )
         
         # Add matrix label
-        f_label = MathTex(r'f(t) = ')
-        matrix_group = VGroup(f_label, matrix).arrange(RIGHT, buff=0.3)
-        matrix_group.next_to(t_group, DOWN, buff=0.8)
+        # f_label = MathTex(r'f(t) = ')
+        # matrix_group = VGroup(matrix).arrange(RIGHT, buff=0.3)
+        # matrix_group.next_to(t_group, DOWN, buff=0.8)
+        matrix.center()
         
         # Link matrix to t parameter
         matrix.add_updater(matrix.create_updater(t))
         
         # Add to scene
-        self.add(t_group, matrix_group)
-        
+        # self.add(t_group, matrix_group)
+        # self.add(matrix)
+
         # Animate the parameter
-        self.wait()
-        self.play(t.animate.set_value(5.0), run_time=3, rate_func=smooth)
-        self.play(t.animate.set_value(-2.5), run_time=2, rate_func=linear)
-        self.wait()
-        self.play(t.animate.set_value(0), run_time=2, rate_func=smooth)
-        self.wait()
+        self.wait(2)
+
+        animations = [
+            {'run_time': 2 * PI, 'rate_func':linear, 'rate_func_string': 'linear'},
+            {'run_time': 2 * PI, 'rate_func':smooth, 'rate_func_string': 'smooth'},
+            {'run_time': 1, 'rate_func':linear, 'rate_func_string': 'linear'},
+            {'run_time': 1, 'rate_func':smooth, 'rate_func_string': 'smooth'}
+        ]
         
-        self.play(FadeOut(*self.mobjects))
+        for A in animations:
+            t.set_value(0)
+            text = Text(f"t = 0...2π in {A['run_time']:.2f} seconds, {A['rate_func_string']} rate function", font_size=24)
+            text.move_to(UP)
+            self.play(FadeIn(text))
+            self.wait(0.5)
+            self.play(FadeOut(text))
+            self.wait(0.5)
+            self.play(FadeIn(matrix))
+            self.wait(1)
+            self.play(t.animate.set_value(2 * PI), run_time=A['run_time'], rate_func=A['rate_func'])
+            self.wait(1)
+            self.play(FadeOut(matrix))
+            self.wait(1)
+
         self.wait(1)
